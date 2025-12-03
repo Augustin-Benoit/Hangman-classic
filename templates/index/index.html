@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hangman Classic</title>
+  /assets/style/style.css
+</head>
+<body>
+  <header>
+    <h1>Jeu du Pendu</h1>
+  </header>
+
+  <main>
+    <section class="game">
+      <div id="hangman-stage" class="step-{{if lt .Errors .MaxErrors}}{{.Errors}}{{else}}{{.MaxErrors}}{{end}}"></div>
+
+      <p>Essais restants : <span id="remaining">{{printf "%d" (sub .MaxErrors .Errors)}}</span></p>
+      <p>Lettres utilisées : <span id="used-letters">{{.UsedLetters}}</span></p>
+
+      <ul id="word-slots" class="slots">
+        {{range .Slots}}
+          <li>{{.}}</li>
+        {{end}}
+      </ul>
+
+      {{if .Over}}
+        <p id="result" class="result {{if eq .Message "Bravo !"}}win{{else}}lose{{end}}">{{.Message}}</p>
+        /new
+          <button type="submit">Nouvelle partie</button>
+        </form>
+      {{else}}
+        <section class="keyboard" aria-label="Clavier">
+          <div id="keyboard" class="keys">
+            {{range .Alphabet}}
+              /guess
+                <input type="hidden" name="ch" value="{{.}}">
+                <button class="key" type="submit">{{.}}</button>
+              </form>
+            {{end}}
+          </div>
+        </section>
+        <form action="/new" method="post"r:#a0a7c4">Difficulté :</label>
+          <select name="hdifficulty">
+            <option value="easy">Facile (8 erreurs)</option>
+            <option value="normal" selected>Normal (6)</option>
+            <option value="hard">Difficile (5)</option>
+          </select>
+          <button type="submit">Nouvelle partie</button>
+        </form>
+      {{end}}
+    </section>
+  </main>
+
+  <footer>
+    <small>Hangman Classic · Go (rendu serveur) · HTML+CSS uniquement</small>
+  </footer>
+</body>
+</html>

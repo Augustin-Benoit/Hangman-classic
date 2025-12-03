@@ -1,0 +1,215 @@
+
+/* ---------- Thème & variables ---------- */
+:root {
+  --bg: #0f1220;
+  --panel: #171b2c;
+  --panel-2: #1e2440;
+  --accent: #7aa2f7;
+  --accent-2: #f7768e;
+  --text: #e6e6e6;
+  --muted: #a0a7c4;
+  --shadow: 0 12px 30px rgba(0,0,0,0.25);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px circle at 20% 30%, #121531, var(--bg));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Layout global ---------- */
+header, footer {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(180deg, #14172b, #101427);
+  border-bottom: 1px solid #242b49;
+}
+header h1 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  letter-spacing: .4px;
+}
+
+main {
+  max-width: 920px;
+  margin: 1.25rem auto 2rem;
+  padding: 0 1rem;
+}
+
+/* ---------- Carte de jeu ---------- */
+.game {
+  background: var(--panel);
+  border: 1px solid #2a3150;
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.game > * + * { margin-top: .8rem; }
+
+/* ---------- Pendu (poteau + étapes) ---------- */
+#hangman-stage {
+  height: 180px;
+  border-radius: 10px;
+  background:
+    /* sol */
+    linear-gradient(#0b0e1e, #0b0e1e) 0 100% / 100% 10px no-repeat,
+    /* poteau vertical */
+    linear-gradient(#2b3358, #2b3358) 18% 95% / 8px 92% no-repeat,
+    /* traverse */
+    linear-gradient(#2b3358, #2b3358) 18% 10% / 38% 8px no-repeat,
+    /* renfort */
+    linear-gradient(#2b3358, #2b3358) 30% 23% / 8% 6px no-repeat,
+    /* corde */
+    linear-gradient(#d9bf8f, #d9bf8f) 56% 10% / 4px 34px no-repeat;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Corps (affiché par étapes via classes .step-N sur #hangman-stage) */
+#hangman-stage::before,
+#hangman-stage::after { content: ""; position: absolute; }
+
+/* Tête */
+#hangman-stage.step-1::before,
+#hangman-stage.step-2::before,
+#hangman-stage.step-3::before,
+#hangman-stage.step-4::before,
+#hangman-stage.step-5::before,
+#hangman-stage.step-6::before {
+  left: 56%;
+  top: 44px;
+  width: 44px;
+  height: 44px;
+  transform: translateX(-50%);
+  border: 4px solid #e6d9b1;
+  border-radius: 50%;
+}
+
+/* Corps & membres (on dessine avec ombres multiples sur ::after) */
+#hangman-stage.step-2::after,
+#hangman-stage.step-3::after,
+#hangman-stage.step-4::after,
+#hangman-stage.step-5::after,
+#hangman-stage.step-6::after {
+  left: calc(56% - 2px);
+  top: 88px;
+  width: 4px;
+  height: 68px;
+  background: #e6d9b1; /* tronc */
+  box-shadow:
+    /* bras gauche (après step-3) */
+    var(--arm-l, 0 0 transparent),
+    /* bras droit (après step-4) */
+    var(--arm-r, 0 0 transparent),
+    /* jambe gauche (après step-5) */
+    var(--leg-l, 0 0 transparent),
+    /* jambe droite (après step-6) */
+    var(--leg-r, 0 0 transparent);
+}
+
+#hangman-stage.step-3 { --arm-l: -24px 16px 0 0 #e6d9b1; }
+#hangman-stage.step-4 { --arm-l: -24px 16px 0 0 #e6d9b1; --arm-r: 24px 16px 0 0 #e6d9b1; }
+#hangman-stage.step-5 { --arm-l: -24px 16px 0 0 #e6d9b1; --arm-r: 24px 16px 0 0 #e6d9b1; --leg-l: -14px 70px 0 0 #e6d9b1; }
+#hangman-stage.step-6 { --arm-l: -24px 16px 0 0 #e6d9b1; --arm-r: 24px 16px 0 0 #e6d9b1; --leg-l: -14px 70px 0 0 #e6d9b1; --leg-r: 14px 70px 0 0 #e6d9b1; }
+
+/* ---------- Infos partie ---------- */
+p { margin: 0; color: var(--muted); }
+#remaining { color: var(--accent); font-weight: 700; }
+
+/* ---------- Slots du mot ---------- */
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  justify-content: center;
+  padding: .4rem 0 .2rem;
+}
+.slots li {
+  list-style: none;
+  width: 2.2rem;
+  height: 2.8rem;
+  display: grid;
+  place-items: center;
+  border-bottom: 3px solid var(--accent);
+  font-size: 1.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ---------- Clavier visuel ---------- */
+.keys {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(2rem, 1fr));
+  gap: .5rem;
+}
+.key {
+  padding: .6rem .4rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid #2f3a63;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  transition: transform .08s ease, background .15s ease, filter .15s ease;
+}
+.key:hover { background: #2a3150; }
+.key:active { transform: translateY(1px); }
+.key[disabled] {
+  background: #1a2140;
+  color: #6b759a;
+  cursor: not-allowed;
+  filter: grayscale(.3);
+}
+
+/* ---------- Boutons et états ---------- */
+button {
+  background: var(--accent);
+  color: #0a0c18;
+  border: none;
+  border-radius: 10px;
+  padding: .65rem 1rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(122,162,247,.25);
+  transition: transform .08s ease, filter .15s ease;
+}
+button:hover { filter: brightness(1.06); }
+button:active { transform: translateY(1px); }
+
+.result {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  min-height: 1.4rem;
+}
+.result.win { color: #88ffcc; }
+.result.lose { color: var(--accent-2); }
+
+/* ---------- Footer ---------- */
+footer {
+  margin-top: 1rem;
+  padding: .8rem 1.25rem;
+  text-align: center;
+  color: #8d95b8;
+  border-top: 1px solid #242b49;
+  background: linear-gradient(0deg, #101427, #11162a);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 700px) {
+  .keys { grid-template-columns: repeat(8, 1fr); }
+  .slots li { width: 2rem; height: 2.5rem; font-size: 1.4rem; }
+  #hangman-stage { height: 160px; }
+}
+@media (max-width: 460px) {
+  .keys { grid-template-columns: repeat(7, 1fr); }
+  header, footer { padding: .8rem 1rem; }
+  main { padding: 0 .8rem; }
+}
