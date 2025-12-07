@@ -23,16 +23,16 @@ type GameState struct {
 }
 
 var (
-	mu   sync.Mutex
-	game *GameState
-	tpl  *template.Template
+	mu      sync.Mutex
+	game    *GameState
+	tpl     *template.Template // home/index (déjà utilisé par HandleIndex)
+	gameTpl *template.Template // game/index (nouveau pour /game)
 )
 
-// helper utilisé par le template
-func sub(a, b int) int { return a - b }
+func sub(a, b int) int { return a - b } // helper pour templates
 
-// ---------- Template (Option 3) ----------
-func mustInitTemplate() {
+// ---------- Templates ----------
+func mustInitTemplate() { // déjà utilisé par HandleIndex -> templates/index/index.html
 	funcMap := template.FuncMap{"sub": sub}
 	indexPath := filepath.Join("templates", "index", "index.html")
 
@@ -44,6 +44,17 @@ func mustInitTemplate() {
 	tpl, err = template.New("index.html").Funcs(funcMap).ParseFiles(indexPath)
 	if err != nil {
 		log.Fatalf("parse templates: %v", err)
+	}
+}
+
+// 🆕 Loader pour la page /game -> templates/game/index.html
+func mustInitTemplateGame() {
+	funcMap := template.FuncMap{"sub": sub}
+	path := filepath.Join("templates", "game", "index.html")
+	var err error
+	gameTpl, err = template.New("game.html").Funcs(funcMap).ParseFiles(path)
+	if err != nil {
+		log.Fatalf("parse game template %s: %v", path, err)
 	}
 }
 
@@ -122,6 +133,45 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 🆕 /game : rendu page de jeu avec pendu SVG adaptatif
+func HandleGame(w http.ResponseWriter, r *http.Request) {
+	if gameTpl == nil {
+		mustInitTemplateGame()
+	}
+	mu.Lock()
+	defer mu.Unlock()
+
+	if game == nil {
+		game = newGame("normal")
+	}
+
+	vm := struct {
+		Title       string
+		Errors      int
+		MaxErrors   int
+		Remaining   int
+		UsedLetters string
+		Slots       []string
+		Alphabet    []string
+		Over        bool
+		Message     string
+	}{
+		Title:       "Jeu — Hangman Classic",
+		Errors:      game.Errors,
+		MaxErrors:   game.MaxErrors,
+		Remaining:   sub(game.MaxErrors, game.Errors),
+		UsedLetters: usedLettersString(game.UsedLetters),
+		Slots:       game.Slots,
+		Alphabet:    game.Alphabet,
+		Over:        game.Over,
+		Message:     game.Message,
+	}
+
+	if err := gameTpl.ExecuteTemplate(w, "game.html", vm); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func HandleNewGame(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", http.StatusBadRequest)
@@ -132,7 +182,8 @@ func HandleNewGame(w http.ResponseWriter, r *http.Request) {
 	game = newGame(diff)
 	mu.Unlock()
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// Retour sur la page de jeu pour voir le pendu réinitialisé
+	http.Redirect(w, r, "/game", http.StatusSeeOther)
 }
 
 func HandleGuess(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +193,7 @@ func HandleGuess(w http.ResponseWriter, r *http.Request) {
 	}
 	ch := r.Form.Get("ch")
 	if ch == "" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, "/game", http.StatusSeeOther)
 		return
 	}
 	letter := []rune(strings.ToUpper(ch))[0]
@@ -154,14 +205,14 @@ func HandleGuess(w http.ResponseWriter, r *http.Request) {
 		game = newGame("normal")
 	}
 	if game.Over {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, "/game", http.StatusSeeOther)
 		return
 	}
 
 	// ignore si déjà utilisée
 	for _, used := range game.UsedLetters {
 		if used == letter {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, "/game", http.StatusSeeOther)
 			return
 		}
 	}
@@ -195,7 +246,7 @@ func HandleGuess(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/game", http.StatusSeeOther)
 }
 
 func usedLettersString(letters []rune) string {

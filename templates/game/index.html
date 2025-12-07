@@ -6,19 +6,22 @@
   <title>{{.Title}}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Si tu utilises un CSS global, laisse ce lien ; sinon supprime-le et garde <style> -->
-  <link rel="stylesheet" href="/assets/style/style.css" />
+   <link rel="stylesheet" href="/assets/style/style.css">
   <style>
     /* Ajoute/complète ces styles uniquement si tu ne les as pas déjà dans assets/style/style.css */
-    .page { max-width: 900px; margin: 48px auto; padding: 0 24px; text-align: center; }
-    .header { margin-bottom: 16px; }
+    .page { max-width: 1000px; margin: 48px auto; padding: 0 24px; }
+    .header { margin-bottom: 16px; text-align: center; }
     .header h1 { font-size: 2.4rem; margin: 8px 0 0 0; }
     .subtitle { color: #9db3c7; margin-top: 8px; }
-    .card { background: #132233; padding: 24px; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,.18); margin: 16px 0; }
+
+    .card { background: #132233; padding: 24px; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,.18); margin: 16px 0; color: #e8f0f7; }
     .actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .btn { display: inline-block; background: #28a8ea; color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 700; border: 1px solid #0003; box-shadow: 0 1px 0 #0002; }
     .btn:hover { background: #1b90cc; }
     .btn.ghost { background: transparent; color: #28a8ea; border: 1px solid #28a8ea; }
-    .mask { font-weight: 800; letter-spacing: .2em; font-size: 1.8rem; display: inline-block; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.03); }
+
+    .mask { font-weight: 800; letter-spacing: .2em; font-size: 1.8rem; display: inline-block; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.06); }
+
     .kb { margin-top: 10px; display: grid; gap: 8px; }
     .kb-row { display: flex; justify-content: center; gap: 8px; }
     .key { min-width: 44px; height: 44px; border-radius: 8px; background: #0b1723; color: #e8f0f7; border: 1px solid #274057; font-weight: 700; cursor: pointer; }
@@ -26,7 +29,24 @@
     .key:disabled { opacity: .55; cursor: default; }
     .key--good { background: #1f7a4a; border-color: #1f7a4a; color: #fff; }
     .key--bad  { background: #8a2c2c; border-color: #8a2c2c; color: #fff; }
-    .footer { margin-top: 24px; color: #9db3c7; }
+
+    .footer { margin-top: 24px; color: #9db3c7; text-align: center; }
+
+    /* ===== Bloc Hangman (positionnement) ===== */
+    .status-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr; /* pendu à gauche, infos à droite */
+      gap: 16px;
+      align-items: start;
+    }
+    .hangman-box {
+      width: 360px; height: 360px;
+      background: #0b1723; border: 1px solid #274057; border-radius: 12px;
+      display: grid; place-items: center;
+    }
+    #hangman { width: 320px; height: 320px; }
+    .line   { stroke: #e8f0f7; stroke-width: 4; fill: none; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -37,16 +57,44 @@
       <p class="subtitle">Clique sur une touche ci‑dessous pour jouer !</p>
     </header>
 
+    <!-- ====== STATUS + HANGMAN ====== -->
     <section class="card" id="status">
-      <p>Mot : <span id="mask" class="mask">_ _ _ _ _</span></p>
-      <p>Vies restantes : <strong id="lives">6</strong></p>
-      <p>Lettres fausses : <span id="wrong">—</span></p>
-      <p id="msg" class="subtitle"></p>
-      <div class="actions">
-        <button class="btn" id="newBtn" type="button">Nouvelle partie</button>
+      <div class="status-grid">
+        <!-- Bloc Pendu -->
+        <div class="hangman-box">
+          <!-- SVG inline : chaque partie a un id -->
+          <svg id="hangman" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"
+               xmlns="http://www.w3.org/2000/svg" aria-label="Dessin du pendu">
+            <!-- Potence -->
+            <line class="line" x1="20" y1="180" x2="120" y2="180"/>
+            <line class="line" x1="60" y1="180" x2="60" y2="20"/>
+            <line class="line" x1="60" y1="20"  x2="130" y2="20"/>
+            <line class="line" x1="130" y1="20" x2="130" y2="40"/>
+
+            <!-- Corps (6 étapes) -->
+            <circle id="hg-head"   class="line hidden" cx="130" cy="55" r="15"/>
+            <line   id="hg-body"   class="line hidden" x1="130" y1="70" x2="130" y2="110"/>
+            <line   id="hg-arm-l"  class="line hidden" x1="130" y1="80" x2="110" y2="95"/>
+            <line   id="hg-arm-r"  class="line hidden" x1="130" y1="80" x2="150" y2="95"/>
+            <line   id="hg-leg-l"  class="line hidden" x1="130" y1="110" x2="115" y2="135"/>
+            <line   id="hg-leg-r"  class="line hidden" x1="130" y1="110" x2="145" y2="135"/>
+          </svg>
+        </div>
+
+        <!-- Infos de partie -->
+        <div>
+          <p>Mot : <span id="mask" class="mask">_ _ _ _ _</span></p>
+          <p>Vies restantes : <strong id="lives">6</strong></p>
+          <p>Lettres fausses : <span id="wrong">—</span></p>
+          <p id="msg" class="subtitle"></p>
+          <div class="actions">
+            <button class="btn" id="newBtn" type="button">Nouvelle partie</button>
+          </div>
+        </div>
       </div>
     </section>
 
+    <!-- ====== CLAVIER ====== -->
     <section class="card">
       <div class="kb" id="kb"></div>
     </section>
@@ -88,15 +136,36 @@
       }
     }
 
+    // ====== Pendu dynamique (client) ======
+    const partsOrder = ["hg-head","hg-body","hg-arm-l","hg-arm-r","hg-leg-l","hg-leg-r"];
+    let initialLives = null; // récupéré à la création de partie
+
+    function updateHangman(lives) {
+      // Si on ne connaît pas encore le nombre de vies initial, on considère 6 par défaut
+      const MAX = initialLives ?? 6;
+      lives = Math.max(0, Math.min(MAX, Number(lives)));
+      const lost = MAX - lives; // nb de parties à afficher
+
+      partsOrder.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle("hidden", !(idx < lost));
+      });
+    }
+
     // ----- Rendu
     function render(g){
       if (!g) return;
+      // Texte
       maskEl.textContent = (g.mask || "").split("").join(" ");
       livesEl.textContent = g.lives;
       wrongEl.textContent = (g.wrong && g.wrong.length) ? g.wrong.join(", ") : "—";
       msgEl.textContent = g.completed
-        ? (g.lives > 0 ? "Bravo ! 🎉 Tu as trouvé le mot." : "Perdu 😅 — Le mot était : " + g.mask)
+        ? (g.lives > 0 ? "Bravo ! 🎉 Tu as trouvé le mot." : "Perdu 😅 — Le mot était : " + (g.word || g.mask))
         : "";
+
+      // Pendu
+      updateHangman(g.lives);
 
       // MAJ états des touches
       keyMap.forEach((btn, ch) => {
@@ -114,10 +183,15 @@
       try {
         const r = await fetch("/new", { method: "POST" });
         if (!r.ok) throw new Error("HTTP " + r.status);
-        render(await r.json());
+        const data = await r.json();
+        initialLives = Number(data.lives ?? 6); // mémorise les vies initiales (utile si mode easy/hard)
+        render(data);
       } catch (e) {
         console.warn("Erreur /new:", e);
         msgEl.textContent = "Impossible de démarrer la partie (API).";
+        // Fallback visuel
+        initialLives = 6;
+        updateHangman(6);
       }
     }
 
