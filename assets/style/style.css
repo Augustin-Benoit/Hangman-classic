@@ -1,6 +1,122 @@
 
-/* assets/style/style.css */
-body { font-family: system-ui, sans-serif; margin: 2rem; }
-h1 { color: #2b6cb0; }
-a { color: #2b6cb0; text-decoration: none; }
-a:hover { text-decoration: underline; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1a27;
+  color: #e8f0f7;
+}
+
+.page {
+  max-width: 720px;
+  margin: 48px auto;
+  padding: 0 24px;
+  text-align: center; /* centrage global */
+}
+
+.header h1 {
+  font-size: 2.4rem;
+  margin-bottom: 8px;
+}
+/* AJOUT: couleur du lien retour */
+.header nav a { color: #28a8ea; text-decoration: none; }
+.header nav a:hover { text-decoration: underline; }
+
+.subtitle {
+  color: #9db3c7;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: #132233;
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.actions {
+  margin-top: 16px;
+  /* AJOUT: centrage horizontal des boutons */
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-block;
+  background: #28a8ea;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  border: 1px solid #0003;          /* léger contour */
+  box-shadow: 0 1px 0 #0002;        /* léger relief */
+}
+
+.btn:hover {
+  background: #1b90cc;
+}
+
+/* AJOUT: bouton “ghost” (contour bleu, fond transparent) */
+.btn.ghost {
+  background: transparent;
+  color: #28a8ea;
+  border: 1px solid #28a8ea;
+}
+
+.footer {
+  margin-top: 32px;
+  font-size: 0.9rem;
+  color: #9db3c7;
+}
+
+/* ========================= */
+/*     AJOUTS POUR LE JEU    */
+/* ========================= */
+
+/* Mot masqué (espacement lisible) */
+.mask {
+  font-weight: 700;
+  letter-spacing: .15em;
+  font-size: 1.6rem;
+}
+
+/* Clavier virtuel */
+.kb {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+.kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.key {
+  min-width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: #0b1723;
+  color: #e8f0f7;
+  border: 1px solid #274057;
+  font-weight: 600;
+  cursor: pointer;
+}
+.key:hover { background: #173047; }
+.key:disabled { opacity: .55; cursor: default; }
+
+/* État des touches après clic */
+.key--good { background: #1f7a4a; border-color: #1f7a4a; color: #fff; }
+.key--bad  { background: #8a2c2c; border-color: #8a2c2c; color: #fff; }
+
+/* AJOUT: champ “Lettre” si tu le gardes */
+input#letter {
+  width: 60px;
+  text-align: center;
+  background: #0b1723;
+  color: #e8f0f7;
+  border: 1px solid #274057;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+label { margin-right: 8px; }

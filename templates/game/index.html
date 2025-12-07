@@ -4,16 +4,146 @@
 <head>
   <meta charset="utf-8">
   <title>{{.Title}}</title>
-  /assets/style/style.css
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Si tu utilises un CSS global, laisse ce lien ; sinon supprime-le et garde <style> -->
+  <link rel="stylesheet" href="/assets/style/style.css" />
+  <style>
+    /* Ajoute/complète ces styles uniquement si tu ne les as pas déjà dans assets/style/style.css */
+    .page { max-width: 900px; margin: 48px auto; padding: 0 24px; text-align: center; }
+    .header { margin-bottom: 16px; }
+    .header h1 { font-size: 2.4rem; margin: 8px 0 0 0; }
+    .subtitle { color: #9db3c7; margin-top: 8px; }
+    .card { background: #132233; padding: 24px; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,.18); margin: 16px 0; }
+    .actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-block; background: #28a8ea; color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 700; border: 1px solid #0003; box-shadow: 0 1px 0 #0002; }
+    .btn:hover { background: #1b90cc; }
+    .btn.ghost { background: transparent; color: #28a8ea; border: 1px solid #28a8ea; }
+    .mask { font-weight: 800; letter-spacing: .2em; font-size: 1.8rem; display: inline-block; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.03); }
+    .kb { margin-top: 10px; display: grid; gap: 8px; }
+    .kb-row { display: flex; justify-content: center; gap: 8px; }
+    .key { min-width: 44px; height: 44px; border-radius: 8px; background: #0b1723; color: #e8f0f7; border: 1px solid #274057; font-weight: 700; cursor: pointer; }
+    .key:hover { background: #173047; }
+    .key:disabled { opacity: .55; cursor: default; }
+    .key--good { background: #1f7a4a; border-color: #1f7a4a; color: #fff; }
+    .key--bad  { background: #8a2c2c; border-color: #8a2c2c; color: #fff; }
+    .footer { margin-top: 24px; color: #9db3c7; }
+  </style>
 </head>
 <body>
-  <header>
-    <nav>/Retour à l'accueil</a></nav>
-  </header>
-  <main>
-    <h1>{{.Title}}</h1>
-    <p>Difficulté : <strong>{{.Difficulty}}</strong></p>
-    <p>Vies : <strong>{{.Lives}}</strong></p>
+  <main class="page">
+    <header class="header">
+      <nav><a href="/">← Retour à l'accueil</a></nav>
+      <h1>{{.Title}}</h1>
+      <p class="subtitle">Clique sur une touche ci‑dessous pour jouer !</p>
+    </header>
+
+    <section class="card" id="status">
+      <p>Mot : <span id="mask" class="mask">_ _ _ _ _</span></p>
+      <p>Vies restantes : <strong id="lives">6</strong></p>
+      <p>Lettres fausses : <span id="wrong">—</span></p>
+      <p id="msg" class="subtitle"></p>
+      <div class="actions">
+        <button class="btn" id="newBtn" type="button">Nouvelle partie</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="kb" id="kb"></div>
+    </section>
+
+    <footer class="footer">
+      <p>&copy; 2025 Hangman Classic — Projet Go</p>
+    </footer>
   </main>
+
+  <script>
+    // ----- Références UI
+    const maskEl = document.getElementById("mask");
+    const livesEl = document.getElementById("lives");
+    const wrongEl = document.getElementById("wrong");
+    const msgEl   = document.getElementById("msg");
+    const newBtn  = document.getElementById("newBtn");
+    const kbEl    = document.getElementById("kb");
+
+    // ----- Clavier virtuel
+    const rows = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"]; // AZERTY
+    const keyMap = new Map(); // lettre -> bouton
+
+    function makeKeyboard(){
+      kbEl.innerHTML = "";
+      keyMap.clear();
+      for (const row of rows) {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "kb-row";
+        for (const ch of row) {
+          const b = document.createElement("button");
+          b.className = "key";
+          b.type = "button";
+          b.textContent = ch;
+          b.addEventListener("click", () => guess(ch));
+          rowDiv.appendChild(b);
+          keyMap.set(ch, b);
+        }
+        kbEl.appendChild(rowDiv);
+      }
+    }
+
+    // ----- Rendu
+    function render(g){
+      if (!g) return;
+      maskEl.textContent = (g.mask || "").split("").join(" ");
+      livesEl.textContent = g.lives;
+      wrongEl.textContent = (g.wrong && g.wrong.length) ? g.wrong.join(", ") : "—";
+      msgEl.textContent = g.completed
+        ? (g.lives > 0 ? "Bravo ! 🎉 Tu as trouvé le mot." : "Perdu 😅 — Le mot était : " + g.mask)
+        : "";
+
+      // MAJ états des touches
+      keyMap.forEach((btn, ch) => {
+        const good = g.correct && g.correct.includes(ch);
+        const bad  = g.wrong   && g.wrong.includes(ch);
+        btn.disabled = !!g.completed || good || bad;
+        btn.classList.toggle("key--good", !!good);
+        btn.classList.toggle("key--bad",  !!bad);
+      });
+    }
+
+    // ----- API
+    async function start(){
+      makeKeyboard(); // le clavier s'affiche immédiatement
+      try {
+        const r = await fetch("/new", { method: "POST" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        render(await r.json());
+      } catch (e) {
+        console.warn("Erreur /new:", e);
+        msgEl.textContent = "Impossible de démarrer la partie (API).";
+      }
+    }
+
+    async function guess(letter){
+      try {
+        const body = new URLSearchParams({ letter: letter.toUpperCase() });
+        const r = await fetch("/guess", { method: "POST", body: body });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        render(await r.json());
+      } catch (e) {
+        console.warn("Erreur /guess:", e);
+        msgEl.textContent = "Échec de l'envoi de la lettre.";
+      }
+    }
+
+    // ----- Événements
+    newBtn.addEventListener("click", start);
+    window.addEventListener("keydown", function(e){
+      const k = (e.key || "").toUpperCase();
+      if (k.length === 1 && k >= "A" && k <= "Z" && keyMap.has(k) && !keyMap.get(k).disabled) {
+        guess(k);
+      }
+    });
+
+    // Go!
+    start();
+  </script>
 </body>
 </html>
